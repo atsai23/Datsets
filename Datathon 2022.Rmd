@@ -1,0 +1,71 @@
+---
+title: "QSIDE 2022"
+author: "Anna Tsai"
+date: "`r Sys.Date()`"
+output: html_document
+---
+## Import Libraries
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+## Get Data
+```{r}
+offender_legal <- read.csv('/Users/actt/Documents/QSIDE Datathon 2022/Offender Legal.csv')
+offender_demographics <- read.csv('/Users/actt/Documents/QSIDE Datathon 2022/Offender Demographics.csv')
+```
+
+## Join Data
+```{r}
+offender_merged <- offender_legal %>% 
+  inner_join(offender_demographics, by = 'DOC_ID')
+```
+
+## Exploratory Analysis
+```{r}
+ggplot(data = offender_merged, mapping = (aes(x= TOTAL_SENTENCED_MONTHS, y = ..density..))) +
+  geom_histogram(color = 1, fill = 'white', na.rm = TRUE) +
+  facet_wrap(~ RACE, scale = 'free_y')
+```
+It seems unusual that there would be so many sentences of zero months. One possible explanation is that from inspecting the data we can see that sometimes life sentences are coded as 0 months and other times they are coded as several thousand months. 
+
+
+```{r}
+sentence_summary <- offender_merged %>% 
+  filter(RACE == 'Native American' & !is.na(TOTAL_SENTENCED_MONTHS)) %>%
+  group_by(COUNTY, OFFENSE, .add= TRUE)  %>%
+  summarize(mean = mean(TOTAL_SENTENCED_MONTHS), count = n())
+```
+
+```{r}
+offender_merged <- offender_merged %>%
+  mutate(YEAR=as.Date(PRONOUNCEMENT_DATE, format = "%m/%d/%Y"))
+
+offender_merged <- offender_merged %>%
+  mutate(YEAR=format(YEAR, format = "%Y"))
+
+filtered_offender_by_year <- offender_merged %>%
+  filter(RACE == 'Native American' &!is.na(YEAR)) %>%
+  group_by(YEAR) %>%
+  summarize(TOTAL_SENTENCES = n())
+```
+
+```{r}
+ggplot(data = filtered_offender_by_year, mapping = (aes(x = YEAR, y = TOTAL_SENTENCES)), ) +
+  geom_point() +
+  geom_vline(xintercept = '2013', color = 'red') +
+  geom_vline(xintercept = '2010', color = 'red') +
+  theme(axis.text.x = element_text(margin = unit(c(0, 0, 0, 0), "mm"), angle = 90)) +
+  xlab('Year')+
+  ylab('Total Sentences')+
+  labs(title = 'Total Sentences By Year for Native Americans in Montana', caption = 'The red lines represent years when siginficant legislation affecting tribal sovereignty was passed')
+
+ggsave('Total Sentences by Year.png')
+```
+
+## Time Series for All Races
+```{r}
+
+```
+

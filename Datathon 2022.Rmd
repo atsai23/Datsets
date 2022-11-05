@@ -28,6 +28,7 @@ ggplot(data = offender_merged, mapping = (aes(x= TOTAL_SENTENCED_MONTHS, y = ..d
   geom_histogram(color = 1, fill = 'white', na.rm = TRUE) +
   facet_wrap(~ RACE, scale = 'free_y')
 ```
+
 It seems unusual that there would be so many sentences of zero months. One possible explanation is that from inspecting the data we can see that sometimes life sentences are coded as 0 months and other times they are coded as several thousand months. 
 
 
@@ -38,13 +39,17 @@ sentence_summary <- offender_merged %>%
   summarize(mean = mean(TOTAL_SENTENCED_MONTHS), count = n())
 ```
 
+
+## Time Series for Native Americans
 ```{r}
+#Convert PRONOUNCEMENT_DATE from string to date and extract year
 offender_merged <- offender_merged %>%
   mutate(YEAR=as.Date(PRONOUNCEMENT_DATE, format = "%m/%d/%Y"))
 
 offender_merged <- offender_merged %>%
   mutate(YEAR=format(YEAR, format = "%Y"))
 
+#Filter by race and group by year
 filtered_offender_by_year <- offender_merged %>%
   filter(RACE == 'Native American' &!is.na(YEAR)) %>%
   group_by(YEAR) %>%
@@ -52,6 +57,7 @@ filtered_offender_by_year <- offender_merged %>%
 ```
 
 ```{r}
+#Plot data
 ggplot(data = filtered_offender_by_year, mapping = (aes(x = YEAR, y = TOTAL_SENTENCES)), ) +
   geom_point() +
   geom_vline(xintercept = '2013', color = 'red') +
@@ -64,8 +70,35 @@ ggplot(data = filtered_offender_by_year, mapping = (aes(x = YEAR, y = TOTAL_SENT
 ggsave('Total Sentences by Year.png')
 ```
 
+
+We can see an increase in slope around 2000/2001 and some increase in slope around the time that significant legislation was passed.
+
 ## Time Series for All Races
 ```{r}
+#Convert PRONOUNCEMENT_DATE from string to date and extract year
+offender_merged <- offender_merged %>%
+  mutate(YEAR=as.Date(PRONOUNCEMENT_DATE, format = "%m/%d/%Y"))
 
+offender_merged <- offender_merged %>%
+  mutate(YEAR=format(YEAR, format = "%Y"))
+
+#Group by year
+sentences_by_year <- offender_merged %>%
+  filter(!is.na(YEAR)) %>%
+  group_by(RACE, YEAR, .add= TRUE) %>%
+  summarize(TOTAL_SENTENCES = n())
 ```
 
+```{r}
+#Plot data
+ggplot(data = filtered_offender_by_year, mapping = (aes(x = YEAR, y = TOTAL_SENTENCES, color = RACE)), ) +
+  geom_point() +
+  theme(axis.text.x = element_text(margin = unit(c(0, 0, 0, 0), "mm"), angle = 90)) +
+  xlab('Year')+
+  ylab('Total Sentences')+
+  labs(title = 'Total Sentences By Year in Montana')
+
+ggsave('Total Sentences by Year_All Races.png')
+```
+
+We can see here that we do not see similar increases for Asian or Pacific Islander and Black populations but do see a similar increase in slope for Native American and White populations.
